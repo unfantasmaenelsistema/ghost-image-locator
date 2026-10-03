@@ -1,0 +1,6 @@
+{
+  "name": "GeoSpecter OSINT - Visual & EXIF Photo Geolocation",
+  "description": "Herramienta de geolocalización e inteligencia OSINT multiplataforma (Windows y Linux). Ubica fotografías analizando metadatos EXIF y pistas visuales con Google Gemini Vision e inteligencia espacial sobre mapas interactivos.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
