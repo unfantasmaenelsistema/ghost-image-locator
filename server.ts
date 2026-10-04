@@ -3,6 +3,7 @@ import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { GoogleGenAI, Type } from '@google/genai';
+import { rateLimit } from 'express-rate-limit';
 
 dotenv.config();
 
@@ -10,10 +11,42 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
-const PORT = Number(process.env.PORT) || 3000;
 
-app.use(express.json({ limit: '60mb' }));
-app.use(express.urlencoded({ extended: true, limit: '60mb' }));
+// PORT/HOST se leen de .env / entorno. Por defecto el servidor solo escucha
+// en 127.0.0.1 (localhost): hace falta fijar HOST=0.0.0.0 explícitamente
+// para exponerlo a otros equipos de la red.
+const DEFAULT_PORT = 3000;
+const parsedPort = Number(process.env.PORT);
+const PORT = Number.isInteger(parsedPort) && parsedPort > 0 && parsedPort < 65536 ? parsedPort : DEFAULT_PORT;
+const HOST = process.env.HOST?.trim() || '127.0.0.1';
+
+// Límite de body generoso (fotos en base64 de alta resolución), pero
+// configurable y con límite al fin y al cabo: antes no había ninguno
+// más allá de este fijo.
+const MAX_BODY_SIZE = process.env.MAX_BODY_SIZE?.trim() || '60mb';
+app.use(express.json({ limit: MAX_BODY_SIZE }));
+app.use(express.urlencoded({ extended: true, limit: MAX_BODY_SIZE }));
+
+app.use((err: any, _req: express.Request, res: express.Response, next: express.NextFunction) => {
+  if (err?.type === 'entity.too.large') {
+    return res.status(413).json({ error: 'El cuerpo de la petición supera el límite permitido.' });
+  }
+  if (err?.type === 'entity.parse.failed' || err instanceof SyntaxError) {
+    return res.status(400).json({ error: 'JSON de la petición no válido.' });
+  }
+  return next(err);
+});
+
+// Rate limiting básico por IP para las rutas que consumen la API de Gemini,
+// pensado para disuadir abuso/rafagas accidentales en un uso local, no para
+// soportar tráfico adversarial a gran escala.
+const aiRateLimiter = rateLimit({
+  windowMs: 60_000,
+  limit: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Demasiadas peticiones. Espera un minuto antes de volver a intentarlo.' },
+});
 
 // Serve static files from public
 app.use(express.static(path.resolve(__dirname, 'public')));
@@ -60,13 +93,36 @@ export interface GeolocationAnalysisResult {
   streetViewCoverageHint: string;
 }
 
-// OSINT Geolocation analysis endpoint with model fallback
-app.post('/api/geolocate', async (req, res) => {
-  try {
-    const { imageBase64, mimeType = 'image/jpeg', clientExif } = req.body;
+// --- Input validation helpers for the AI-backed routes ---
+// Everything here is attacker-controlled (any visitor to the local
+// server), so every field is type- and length-checked before it is
+// spliced into a Gemini prompt or proxied to a third-party API.
+const VALID_IMAGE_MIME_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif']);
+const MAX_TEXT_QUERY = 300;
 
-    if (!imageBase64) {
+function isNonEmptyString(value: unknown): value is string {
+  return typeof value === 'string' && value.trim().length > 0;
+}
+
+function isValidCoordinate(value: unknown, min: number, max: number): boolean {
+  if (value === undefined || value === null || value === '') return true; // opcional
+  const n = typeof value === 'number' ? value : Number(value);
+  return Number.isFinite(n) && n >= min && n <= max;
+}
+
+// OSINT Geolocation analysis endpoint with model fallback
+app.post('/api/geolocate', aiRateLimiter, async (req, res) => {
+  try {
+    const { imageBase64, mimeType = 'image/jpeg', clientExif } = req.body || {};
+
+    if (!isNonEmptyString(imageBase64)) {
       return res.status(400).json({ error: 'No se ha proporcionado imagen en base64' });
+    }
+    if (typeof mimeType !== 'string' || !VALID_IMAGE_MIME_TYPES.has(mimeType)) {
+      return res.status(400).json({ error: 'Tipo de imagen no soportado' });
+    }
+    if (clientExif !== undefined && (typeof clientExif !== 'object' || clientExif === null)) {
+      return res.status(400).json({ error: 'clientExif debe ser un objeto' });
     }
 
     if (!process.env.GEMINI_API_KEY) {
@@ -348,11 +404,14 @@ Devuelve OBLIGATORIAMENTE tu respuesta en español, con un objeto JSON válido c
 });
 
 // Location Search endpoint (Geocoding via Nominatim to search streets, landmarks, businesses)
-app.get('/api/search-location', async (req, res) => {
+app.get('/api/search-location', aiRateLimiter, async (req, res) => {
   try {
-    const query = req.query.q as string;
-    if (!query) {
+    const query = req.query.q;
+    if (!isNonEmptyString(query)) {
       return res.status(400).json({ error: 'Parámetro q requerido' });
+    }
+    if (query.length > MAX_TEXT_QUERY) {
+      return res.status(400).json({ error: `El parámetro q admite como máximo ${MAX_TEXT_QUERY} caracteres.` });
     }
 
     const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5&addressdetails=1`;
@@ -376,9 +435,22 @@ app.get('/api/search-location', async (req, res) => {
 });
 
 // Live Social Media & Web OSINT Search endpoint using Google Search Grounding
-app.post('/api/social-search-live', async (req, res) => {
+app.post('/api/social-search-live', aiRateLimiter, async (req, res) => {
   try {
-    const { imageBase64, mimeType = 'image/jpeg', query = '' } = req.body;
+    const { imageBase64, mimeType = 'image/jpeg', query = '' } = req.body || {};
+
+    if (imageBase64 !== undefined && !isNonEmptyString(imageBase64)) {
+      return res.status(400).json({ error: 'imageBase64 debe ser una cadena no vacía' });
+    }
+    if (imageBase64 !== undefined && (typeof mimeType !== 'string' || !VALID_IMAGE_MIME_TYPES.has(mimeType))) {
+      return res.status(400).json({ error: 'Tipo de imagen no soportado' });
+    }
+    if (query !== undefined && typeof query !== 'string') {
+      return res.status(400).json({ error: 'query debe ser una cadena de texto' });
+    }
+    if (typeof query === 'string' && query.length > MAX_TEXT_QUERY) {
+      return res.status(400).json({ error: `query admite como máximo ${MAX_TEXT_QUERY} caracteres.` });
+    }
 
     if (!process.env.GEMINI_API_KEY) {
       return res.status(500).json({ error: 'GEMINI_API_KEY no configurada' });
@@ -481,9 +553,22 @@ Devuelve un reporte conciso y profesional en español estructurado en:
 });
 
 // Grounding with Google Maps Data endpoint
-app.post('/api/verify-google-maps', async (req, res) => {
+app.post('/api/verify-google-maps', aiRateLimiter, async (req, res) => {
   try {
-    const { query, latitude, longitude, locationName } = req.body;
+    const { query, latitude, longitude, locationName } = req.body || {};
+
+    if (query !== undefined && typeof query !== 'string') {
+      return res.status(400).json({ error: 'query debe ser una cadena de texto' });
+    }
+    if (locationName !== undefined && typeof locationName !== 'string') {
+      return res.status(400).json({ error: 'locationName debe ser una cadena de texto' });
+    }
+    if ((typeof query === 'string' && query.length > MAX_TEXT_QUERY) || (typeof locationName === 'string' && locationName.length > MAX_TEXT_QUERY)) {
+      return res.status(400).json({ error: `query/locationName admiten como máximo ${MAX_TEXT_QUERY} caracteres.` });
+    }
+    if (!isValidCoordinate(latitude, -90, 90) || !isValidCoordinate(longitude, -180, 180)) {
+      return res.status(400).json({ error: 'Coordenadas inválidas' });
+    }
 
     if (!process.env.GEMINI_API_KEY) {
       return res.status(500).json({ error: 'GEMINI_API_KEY no configurada' });
@@ -580,8 +665,11 @@ async function setupServer() {
     app.use(vite.middlewares);
   }
 
-  app.listen(PORT, '0.0.0.0', () => {
-    console.log(`[GeoSpecter OSINT] Servidor activo en http://0.0.0.0:${PORT}`);
+  app.listen(PORT, HOST, () => {
+    console.log(`[GeoSpecter OSINT] Servidor activo en http://${HOST}:${PORT}`);
+    if (HOST === '0.0.0.0' || HOST === '::') {
+      console.warn('[AVISO] El servidor escucha en todas las interfaces de red. Úsalo solo si sabes lo que haces.');
+    }
   });
 }
 
