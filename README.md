@@ -7,6 +7,20 @@ Sitio Web Oficial: [www.unfantasmaenelsistema.com](https://www.unfantasmaenelsis
 
 ---
 
+## 🖼️ Capturas de Pantalla
+
+<table>
+  <tr>
+    <td><img src="docs/screenshots/01-landing.png" alt="Pantalla de inicio: subir una fotografía para geolocalizarla"></td>
+    <td><img src="docs/screenshots/02-samples.png" alt="Galería de fotos de muestra para probar el motor OSINT"></td>
+  </tr>
+  <tr>
+    <td colspan="2"><img src="docs/screenshots/03-forensic-analysis.png" alt="Visor forense con filtros, cadena de custodia SHA-256 e inspección de metadatos EXIF"></td>
+  </tr>
+</table>
+
+---
+
 ## ⚡ Características Principales
 
 1. **Doble Motor de Detección:**
