@@ -94,9 +94,9 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({ result, exif }) 
         break;
       case 'dark':
       default:
-        tileUrl = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
-        attribution = '&copy; <a href="https://carto.com/">CARTO</a>';
-        maxZoom = 19;
+        tileUrl = 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}';
+        attribution = 'Tiles &copy; Esri &mdash; Esri, HERE, Garmin, FAO, NOAA, USGS';
+        maxZoom = 16;
         break;
     }
 

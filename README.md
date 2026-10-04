@@ -40,8 +40,8 @@ Sitio Web Oficial: [www.unfantasmaenelsistema.com](https://www.unfantasmaenelsis
 ### En Windows (1 Clic)
 1. Clona el repositorio:
    ```cmd
-   git clone https://github.com/TU_USUARIO/geospecter-osint.git
-   cd geospecter-osint
+   git clone https://github.com/unfantasmaenelsistema/ghost-image-locator.git
+   cd ghost-image-locator
    ```
 2. Haz doble clic en el archivo **`run.bat`** (o ejecútalo desde CMD/PowerShell).
 3. El script comprobará dependencias, creará el `.env` y abrirá la aplicación en tu navegador en `http://localhost:3000`.
@@ -51,8 +51,8 @@ Sitio Web Oficial: [www.unfantasmaenelsistema.com](https://www.unfantasmaenelsis
 ### En Linux / macOS
 1. Clona el repositorio:
    ```bash
-   git clone https://github.com/TU_USUARIO/geospecter-osint.git
-   cd geospecter-osint
+   git clone https://github.com/unfantasmaenelsistema/ghost-image-locator.git
+   cd ghost-image-locator
    ```
 2. Da permisos de ejecución al script y lánzalo:
    ```bash
