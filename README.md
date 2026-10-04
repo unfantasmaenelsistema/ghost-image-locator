@@ -7,6 +7,20 @@ Sitio Web Oficial: [www.unfantasmaenelsistema.com](https://www.unfantasmaenelsis
 
 ---
 
+## 🖼️ Capturas de Pantalla
+
+<table>
+  <tr>
+    <td><img src="docs/screenshots/01-landing.png" alt="Pantalla de inicio: subir una fotografía para geolocalizarla"></td>
+    <td><img src="docs/screenshots/02-samples.png" alt="Galería de fotos de muestra para probar el motor OSINT"></td>
+  </tr>
+  <tr>
+    <td colspan="2"><img src="docs/screenshots/03-forensic-analysis.png" alt="Visor forense con filtros, cadena de custodia SHA-256 e inspección de metadatos EXIF"></td>
+  </tr>
+</table>
+
+---
+
 ## ⚡ Características Principales
 
 1. **Doble Motor de Detección:**
@@ -40,8 +54,8 @@ Sitio Web Oficial: [www.unfantasmaenelsistema.com](https://www.unfantasmaenelsis
 ### En Windows (1 Clic)
 1. Clona el repositorio:
    ```cmd
-   git clone https://github.com/TU_USUARIO/geospecter-osint.git
-   cd geospecter-osint
+   git clone https://github.com/unfantasmaenelsistema/ghost-image-locator.git
+   cd ghost-image-locator
    ```
 2. Haz doble clic en el archivo **`run.bat`** (o ejecútalo desde CMD/PowerShell).
 3. El script comprobará dependencias, creará el `.env` y abrirá la aplicación en tu navegador en `http://localhost:3000`.
@@ -51,8 +65,8 @@ Sitio Web Oficial: [www.unfantasmaenelsistema.com](https://www.unfantasmaenelsis
 ### En Linux / macOS
 1. Clona el repositorio:
    ```bash
-   git clone https://github.com/TU_USUARIO/geospecter-osint.git
-   cd geospecter-osint
+   git clone https://github.com/unfantasmaenelsistema/ghost-image-locator.git
+   cd ghost-image-locator
    ```
 2. Da permisos de ejecución al script y lánzalo:
    ```bash
@@ -68,7 +82,25 @@ Crea o edita el archivo `.env` en la raíz del proyecto:
 ```env
 GEMINI_API_KEY="AIzaSy..."
 PORT=3000
+HOST=127.0.0.1
 ```
+
+---
+
+## 🔒 Seguridad
+
+- El servidor escucha por defecto en `127.0.0.1` (solo tu equipo). Cambia
+  `HOST=0.0.0.0` en `.env` únicamente si necesitas acceder desde otro
+  dispositivo de tu red, y hazlo con conocimiento de causa: tu clave de
+  Gemini vive en el backend, no en el navegador, pero cualquiera que llegue
+  al puerto podría usar la app (y tu cuota de la API) como si fuera suya.
+- Las rutas que llaman a Gemini (`/api/geolocate`, `/api/social-search-live`,
+  `/api/verify-google-maps`) y la que consulta OpenStreetMap
+  (`/api/search-location`) aplican un límite básico de peticiones por IP.
+- **Esta herramienta deduce ubicaciones a partir de fotos.** Úsala con
+  fines de investigación OSINT, periodismo, formación o verificación de
+  contenido propio — no para geolocalizar a terceros sin su consentimiento
+  ni con fines de acoso.
 
 ---
 
@@ -81,4 +113,4 @@ PORT=3000
 ---
 
 ## 📄 Licencia
-Distribuido bajo licencia MIT. Desarrollado con fines de investigación OSINT, formativos y educativos.
+Distribuido bajo licencia [MIT](LICENSE). Desarrollado con fines de investigación OSINT, formativos y educativos.

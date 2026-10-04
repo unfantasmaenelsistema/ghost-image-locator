@@ -1,6 +1,24 @@
 import { GeolocationAnalysisResult } from '../types';
 
 /**
+ * Escapes text for safe insertion into the KML XML/HTML we build by hand.
+ * city/country/approximateAddress are free-text strings Gemini derives from
+ * analyzing the photo: an adversarial image (hidden prompt-injection text)
+ * could in principle make Gemini return a value containing markup. Google
+ * Earth and Google My Maps render a Placemark's <description> CDATA as HTML
+ * in its info balloon, so without this, such a value would execute as
+ * script when the exported .kml is opened.
+ */
+function escapeXml(value: unknown): string {
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+/**
  * Generates circle coordinates around a center point for KML/GeoJSON polygons.
  */
 function generateCirclePoints(centerLat: number, centerLng: number, radiusKm: number, numPoints = 64): [number, number][] {
@@ -34,7 +52,13 @@ function generateCirclePoints(centerLat: number, centerLng: number, radiusKm: nu
  * Exports analysis result to standard KML 2.2 format for Google Earth Pro 3D.
  */
 export function exportToKml(result: GeolocationAnalysisResult, caseTitle = 'Investigacion_OSINT'): void {
-  const { latitude, longitude, city, country, confidenceRadiusKm, confidencePercent, confidenceLevel, approximateAddress } = result;
+  const { latitude, longitude, confidenceRadiusKm, confidencePercent, confidenceLevel, approximateAddress } = result;
+  // Campos de texto libre devueltos por Gemini: se escapan antes de insertarlos
+  // en el XML/HTML que construimos a mano (ver escapeXml más arriba).
+  const city = escapeXml(result.city);
+  const country = escapeXml(result.country);
+  const safeApproximateAddress = escapeXml(approximateAddress || result.city);
+  const safeConfidenceLevel = escapeXml(confidenceLevel);
 
   const circlePoints = generateCirclePoints(latitude, longitude, confidenceRadiusKm || 1);
   const polygonCoordinates = circlePoints.map(([lat, lng]) => `${lng},${lat},0`).join(' ');
@@ -48,9 +72,9 @@ export function exportToKml(result: GeolocationAnalysisResult, caseTitle = 'Inve
     <name>GeoSpecter OSINT - ${city}, ${country}</name>
     <description><![CDATA[
       <h2>Dictamen Pericial de Geolocalización OSINT</h2>
-      <p><b>Ubicación:</b> ${approximateAddress || city}, ${country}</p>
+      <p><b>Ubicación:</b> ${safeApproximateAddress}, ${country}</p>
       <p><b>Coordenadas:</b> ${latitude.toFixed(6)}, ${longitude.toFixed(6)}</p>
-      <p><b>Certeza:</b> ${confidencePercent}% (${confidenceLevel})</p>
+      <p><b>Certeza:</b> ${confidencePercent}% (${safeConfidenceLevel})</p>
       <p><b>Radio de Incertidumbre:</b> ±${confidenceRadiusKm} km</p>
       <p><a href="${mapsUrl}">Abrir en Google Maps</a> | <a href="${streetViewUrl}">Ver en Google Street View 360°</a></p>
     ]]></description>
