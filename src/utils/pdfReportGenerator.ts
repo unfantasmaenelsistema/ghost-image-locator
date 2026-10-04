@@ -262,72 +262,101 @@ export async function generateOsintPdfReport({
     doc.text('3. ANÁLISIS TEMPORAL FORENSE: INCLINACIÓN DE SOMBRAS Y VEGETACIÓN', margin, y);
     y += 5;
 
-    const timelineBoxHeight = result.chronoTimeline ? 38 : 28;
-    doc.setFillColor(248, 250, 252);
-    doc.setDrawColor(226, 232, 240);
-    doc.roundedRect(margin, y, contentWidth, timelineBoxHeight, 1.5, 1.5, 'FD');
+    const textWidth = contentWidth - 8;
+    const lineH = 3.6;
 
     if (result.chronoTimeline) {
       const ct = result.chronoTimeline;
+      const ratioLines = doc.splitTextToSize(`Proporción de sombra: ${ct.shadowRatioDescription}`, textWidth);
+      const vegLines = doc.splitTextToSize(`Especies y fenología: ${ct.vegetationSpecies} — ${ct.phenologicalStage}`, textWidth);
+      const synLines = doc.splitTextToSize(`Dictamen temporal conjunto: ${ct.forensicSynthesis}`, textWidth);
+
+      const timelineBoxHeight =
+        6 + ratioLines.length * lineH + 3 +
+        6 + vegLines.length * lineH + 3 +
+        5 + synLines.length * lineH + 4;
+
+      checkPageBreak(timelineBoxHeight + 6);
+
+      doc.setFillColor(248, 250, 252);
+      doc.setDrawColor(226, 232, 240);
+      doc.roundedRect(margin, y, contentWidth, timelineBoxHeight, 1.5, 1.5, 'FD');
+
+      let cy = y + 6;
+
       // Solar metrics line
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(8);
       doc.setTextColor(180, 83, 9); // amber-700
-      doc.text(`• Vector Solar: Hora ${ct.estimatedTimeWindow} | Inclinación: ${ct.shadowAngleDegrees}° | Azimut: ${ct.solarAzimuth}`, margin + 4, y + 6);
+      doc.text(`• Vector Solar: Hora ${ct.estimatedTimeWindow} | Inclinación: ${ct.shadowAngleDegrees}° | Azimut: ${ct.solarAzimuth}`, margin + 4, cy);
+      cy += 5;
 
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(7.5);
       doc.setTextColor(71, 85, 105);
-      const ratioLines = doc.splitTextToSize(`Proporción de sombra: ${ct.shadowRatioDescription}`, contentWidth - 8);
-      doc.text(ratioLines[0] || '', margin + 4, y + 11);
+      doc.text(ratioLines, margin + 4, cy);
+      cy += ratioLines.length * lineH + 3;
 
       // Botanical metrics line
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(8);
       doc.setTextColor(5, 150, 105); // emerald-600
-      doc.text(`• Vector Botánico: Ventana ${ct.estimatedDateWindow} (Mes cumbre: ${ct.peakMonth}) | Estación: ${ct.estimatedSeason}`, margin + 4, y + 18);
+      doc.text(`• Vector Botánico: Ventana ${ct.estimatedDateWindow} (Mes cumbre: ${ct.peakMonth}) | Estación: ${ct.estimatedSeason}`, margin + 4, cy);
+      cy += 5;
 
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(7.5);
       doc.setTextColor(71, 85, 105);
-      const vegLines = doc.splitTextToSize(`Especies y fenología: ${ct.vegetationSpecies} — ${ct.phenologicalStage}`, contentWidth - 8);
-      doc.text(vegLines[0] || '', margin + 4, y + 23);
+      doc.text(vegLines, margin + 4, cy);
+      cy += vegLines.length * lineH + 3;
 
       // Forensic synthesis
       doc.setFont('helvetica', 'italic');
       doc.setFontSize(7.5);
       doc.setTextColor(30, 41, 59);
-      const synLines = doc.splitTextToSize(`Dictamen temporal conjunto: ${ct.forensicSynthesis}`, contentWidth - 8);
-      doc.text(synLines[0] || '', margin + 4, y + 29);
-      if (synLines[1]) {
-        doc.text(synLines[1], margin + 4, y + 33.5);
-      }
+      doc.text(synLines, margin + 4, cy);
 
       y += timelineBoxHeight + 6;
     } else if (result.chronolocation) {
+      const sunLines = doc.splitTextToSize(`Sombras/Azimut: ${result.chronolocation.sunPositionAnalysis}`, textWidth);
+      const envLines = doc.splitTextToSize(`Pistas bioambientales: ${result.chronolocation.environmentalClues}`, textWidth);
+
+      const boxHeight =
+        6 + sunLines.length * lineH + 3 +
+        6 + envLines.length * lineH + 4;
+
+      checkPageBreak(boxHeight + 6);
+
+      doc.setFillColor(248, 250, 252);
+      doc.setDrawColor(226, 232, 240);
+      doc.roundedRect(margin, y, contentWidth, boxHeight, 1.5, 1.5, 'FD');
+
+      let cy = y + 6;
+
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(8);
       doc.setTextColor(180, 83, 9);
-      doc.text(`• Hora solar estimada: ${result.chronolocation.estimatedTimeOfDay} (${result.chronolocation.timeConfidence})`, margin + 4, y + 6);
+      doc.text(`• Hora solar estimada: ${result.chronolocation.estimatedTimeOfDay} (${result.chronolocation.timeConfidence})`, margin + 4, cy);
+      cy += 5;
 
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(7.5);
       doc.setTextColor(71, 85, 105);
-      const sunLines = doc.splitTextToSize(`Sombras/Azimut: ${result.chronolocation.sunPositionAnalysis}`, contentWidth - 8);
-      doc.text(sunLines[0] || '', margin + 4, y + 11);
+      doc.text(sunLines, margin + 4, cy);
+      cy += sunLines.length * lineH + 3;
 
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(8);
       doc.setTextColor(5, 150, 105);
-      doc.text(`• Estación y meses estimados: ${result.chronolocation.estimatedSeason} (${result.chronolocation.estimatedMonthRange})`, margin + 4, y + 18);
+      doc.text(`• Estación y meses estimados: ${result.chronolocation.estimatedSeason} (${result.chronolocation.estimatedMonthRange})`, margin + 4, cy);
+      cy += 5;
 
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(7.5);
       doc.setTextColor(71, 85, 105);
-      const envLines = doc.splitTextToSize(`Pistas bioambientales: ${result.chronolocation.environmentalClues}`, contentWidth - 8);
-      doc.text(envLines[0] || '', margin + 4, y + 23);
+      doc.text(envLines, margin + 4, cy);
 
-      y += 33;
+      y += boxHeight + 6;
     }
   }
 
@@ -343,9 +372,15 @@ export async function generateOsintPdfReport({
   y += 5;
 
   if (result.visualClues && result.visualClues.length > 0) {
+    const clueTextWidth = contentWidth - 6;
+    const clueLineH = 3.4;
+
     for (let i = 0; i < result.visualClues.length; i++) {
       const clue = result.visualClues[i];
-      const clueBoxHeight = 15;
+      const obsLines = doc.splitTextToSize(`Observación: ${clue.observation}`, clueTextWidth);
+      const dedLines = doc.splitTextToSize(`Deducción: ${clue.deduction}`, clueTextWidth);
+      const clueBoxHeight = 7 + obsLines.length * clueLineH + 1.5 + dedLines.length * clueLineH + 2.5;
+
       checkPageBreak(clueBoxHeight + 3);
 
       doc.setFillColor(248, 250, 252);
@@ -373,12 +408,12 @@ export async function generateOsintPdfReport({
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(7.2);
       doc.setTextColor(71, 85, 105);
-      const obsLines = doc.splitTextToSize(`Observación: ${clue.observation}`, contentWidth - 6);
-      doc.text(obsLines[0] || '', margin + 3, y + 8.5);
+      let clueCy = y + 8.5;
+      doc.text(obsLines, margin + 3, clueCy);
+      clueCy += obsLines.length * clueLineH + 1.5;
 
       // Deduction
-      const dedLines = doc.splitTextToSize(`Deducción: ${clue.deduction}`, contentWidth - 6);
-      doc.text(dedLines[0] || '', margin + 3, y + 12.5);
+      doc.text(dedLines, margin + 3, clueCy);
 
       y += clueBoxHeight + 2.5;
     }
@@ -403,7 +438,15 @@ export async function generateOsintPdfReport({
   doc.text('5. PROTOCOLO Y RESULTADOS DE BÚSQUEDA INVERSA OSINT MULTIMOTOR', margin, y);
   y += 5;
 
-  const reverseBoxHeight = 35;
+  // Suggested keywords line (computed first so the box can be sized to fit it)
+  const terms = result.socialMediaSearchTerms && result.socialMediaSearchTerms.length > 0
+    ? result.socialMediaSearchTerms.join(' | ')
+    : `${result.city} ${result.country} ${result.approximateAddress}`;
+  const termLines = doc.splitTextToSize(terms, contentWidth - 8);
+  const reverseBoxHeight = 26 + termLines.length * 3.6 + 4;
+
+  checkPageBreak(reverseBoxHeight + 6);
+
   doc.setFillColor(248, 250, 252);
   doc.setDrawColor(226, 232, 240);
   doc.roundedRect(margin, y, contentWidth, reverseBoxHeight, 1.5, 1.5, 'FD');
@@ -420,11 +463,6 @@ export async function generateOsintPdfReport({
   doc.text('2. Google Lens: Reconocimiento de señalética comercial, marcas registradas y monumentos patrimoniales.', margin + 6, y + 15.5);
   doc.text('3. Bing Visual Search & TinEye: Verificación de primera indexación histórica en la red y trazabilidad de publicación.', margin + 6, y + 20);
 
-  // Suggested keywords line
-  const terms = result.socialMediaSearchTerms && result.socialMediaSearchTerms.length > 0
-    ? result.socialMediaSearchTerms.join(' | ')
-    : `${result.city} ${result.country} ${result.approximateAddress}`;
-
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(7.5);
   doc.setTextColor(15, 23, 42);
@@ -433,8 +471,7 @@ export async function generateOsintPdfReport({
   doc.setFont('courier', 'normal');
   doc.setFontSize(7);
   doc.setTextColor(71, 85, 105);
-  const termLines = doc.splitTextToSize(terms, contentWidth - 8);
-  doc.text(termLines[0] || terms, margin + 4, y + 30.5);
+  doc.text(termLines, margin + 4, y + 30.5);
 
   y += reverseBoxHeight + 6;
 
