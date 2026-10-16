@@ -192,14 +192,14 @@ npm start
                 </p>
                 <div className="relative rounded-lg bg-slate-950 p-3 font-mono text-xs text-slate-300 border border-slate-800">
                   <pre>
-                    git clone https://github.com/TU_USUARIO/geospecter-osint.git{'\n'}
-                    cd geospecter-osint{'\n'}
+                    git clone https://github.com/unfantasmaenelsistema/ghost-image-locator.git{'\n'}
+                    cd ghost-image-locator{'\n'}
                     run.bat
                   </pre>
                   <button
                     onClick={() =>
                       handleCopy(
-                        'git clone https://github.com/TU_USUARIO/geospecter-osint.git\ncd geospecter-osint\nrun.bat',
+                        'git clone https://github.com/unfantasmaenelsistema/ghost-image-locator.git\ncd ghost-image-locator\nrun.bat',
                         'win-cmd',
                       )
                     }
@@ -241,15 +241,15 @@ npm start
                 </p>
                 <div className="relative rounded-lg bg-slate-950 p-3 font-mono text-xs text-slate-300 border border-slate-800">
                   <pre>
-                    git clone https://github.com/TU_USUARIO/geospecter-osint.git{'\n'}
-                    cd geospecter-osint{'\n'}
+                    git clone https://github.com/unfantasmaenelsistema/ghost-image-locator.git{'\n'}
+                    cd ghost-image-locator{'\n'}
                     chmod +x run.sh{'\n'}
                     ./run.sh
                   </pre>
                   <button
                     onClick={() =>
                       handleCopy(
-                        'git clone https://github.com/TU_USUARIO/geospecter-osint.git\ncd geospecter-osint\nchmod +x run.sh\n./run.sh',
+                        'git clone https://github.com/unfantasmaenelsistema/ghost-image-locator.git\ncd ghost-image-locator\nchmod +x run.sh\n./run.sh',
                         'linux-cmd',
                       )
                     }

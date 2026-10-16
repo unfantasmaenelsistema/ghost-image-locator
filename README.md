@@ -3,6 +3,8 @@
 
 Herramienta de geolocalización e inteligencia geoespacial (GEOINT / OSINT) multiplataforma (Windows y Linux). Permite cargar cualquier fotografía y deducir su ubicación en el mapa combinando **metadatos forenses EXIF** y el poder de **Google Gemini 3.8 Flash Multimodal Vision**.
 
+> 🌐 ¿Sin instalar nada? Usa la **versión web** con tu propia API key guardada solo en el navegador: [unfantasmaenelsistema.github.io/ghost-image-locator-web](https://unfantasmaenelsistema.github.io/ghost-image-locator-web/) ([repo](https://github.com/unfantasmaenelsistema/ghost-image-locator-web)).
+
 Sitio Web Oficial: [www.unfantasmaenelsistema.com](https://www.unfantasmaenelsistema.com/)
 
 ---
